@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Сапёр</title>
+<style>
+.cell {
+width: 30px;
+height: 30px;
+border: 1px solid #ccc;
+display: inline-block;
+text-align: center;
+vertical-align: middle;
+font-weight: bold;
+cursor: pointer;
+    }
+    .mine {
+      background-color: rgb(255, 0, 0);
+    }
+    .empty {
+      background-color: #ffffff;
+    }
+    .revealed {
+      background-color: #ddd;
+    }
+    .number1 {
+      color: rgb(1, 97, 25);
+    }
+    .number2 {
+      color: rgb(0, 53, 167);
+    }
+    .number3 {
+      color: rgb(117, 0, 163);
+    }
+    .number4 {
+      color: rgb(141, 66, 4);
+    }
+    .number5{
+      color: rgb(54, 6, 0);
+    }
+    .number6{
+      color: rgb(19, 80, 0);
+    }
+    .number7{
+      color: rgb(107, 1, 15);
+    }
+    .number8{
+      color: rgb(65, 66, 1);
+    }
+    .cell:hover {
+      background-color: rgb(162, 211, 190);
+    }
+    .flagged{
+      background-color: rgba(247, 143, 25, 0.301);
+    }
+  </style>
+</head>
+<body>
+  <div id="game-board"></div>
+
+
+  <script>
+    const N = 10; 
+    const M = Math.floor(N * N * 0.25); 
+
+    const gameBoard = document.getElementById('game-board');
+    for (let i = 0; i < N; i++) {
+      for (let j = 0; j < N; j++) {
+        const cell = document.createElement('div');
+        cell.classList.add('cell');
+        cell.dataset.row = i;
+        cell.dataset.col = j;
+        gameBoard.appendChild(cell);
+      }
+      gameBoard.appendChild(document.createElement('br'));
+    }
+
+    const minePositions = [];
+    while (minePositions.length < M) {
+      const row = Math.floor(Math.random() * N);
+      const col = Math.floor(Math.random() * N);
+      const position = `${row}-${col}`;
+      if (!minePositions.includes(position)) {
+        minePositions.push(position);
+      }
+    }
+
+    const cells = document.querySelectorAll('.cell');
+    cells.forEach(cell => {
+      cell.addEventListener('click', handleCellClick);
+      cell.addEventListener('contextmenu', handleCellRightClick);
+    });
+
+    function handleCellClick(event) {
+      const cell = event.target;
+      const row = parseInt(cell.dataset.row);
+      const col = parseInt(cell.dataset.col);
+      const position = `${row}-${col}`;
+
+      if (minePositions.includes(position)) {
+        revealMines();
+        gameOver();
+      } else {
+        const mineCount = countAdjacentMines(row, col);
+        if (mineCount === 0) {
+          revealEmptyCells(row, col);
+        } else {
+          cell.textContent = mineCount;
+          cell.classList.add(`number${mineCount}`);
+        }
+        cell.classList.add('revealed');
+      }
+      checkWin();
+    }
+
+    function handleCellRightClick(event) {
+      event.preventDefault();
+      const cell = event.target;
+      if (!cell.classList.contains('revealed')) {
+        cell.classList.toggle('flagged');
+      }
+    }
+
+    function countAdjacentMines(row, col) {
+      let count = 0;
+      for (let i = row - 1; i <= row + 1; i++) {
+        for (let j = col - 1; j <= col + 1; j++) {
+          if (i >= 0 && i < N && j >= 0 && j < N) {
+            const position = `${i}-${j}`;
+            if (minePositions.includes(position)) {
+              count++;
+            }
+          }
+        }
+      }
+      return count;
+    }
+
+    function revealEmptyCells(row, col) {
+      const cell = document.querySelector(`.cell[data-row="${row}"][data-col="${col}"]`);
+      if (cell && !cell.classList.contains('revealed')) {
+        const mineCount = countAdjacentMines(row, col);
+        if (mineCount === 0) {
+          cell.classList.add('empty', 'revealed');
+          for (let i = row - 1; i <= row + 1; i++) {
+            for (let j = col - 1; j <= col + 1; j++) {
+              if (i >= 0 && i < N && j >= 0 && j < N) {
+                revealEmptyCells(i, j);
+              }
+            }
+          }
+        } else {
+          cell.textContent = mineCount;
+          cell.classList.add(`number${mineCount}`, 'revealed');
+        }
+      }
+    }
+
+    function revealMines() {
+      minePositions.forEach(position => {
+        const [row, col] = position.split('-');
+        const cell = document.querySelector(`.cell[data-row="${row}"][data-col="${col}"]`);
+        cell.classList.add('mine', 'revealed');
+      });
+    }
+
+    function gameOver() {
+      cells.forEach(cell => {
+        cell.removeEventListener('click', handleCellClick);
+        cell.removeEventListener('contextmenu', handleCellRightClick);
+      });
+      alert('Вы проиграли =)');
+    }
+
+    function checkWin() {
+      const revealedCells = document.querySelectorAll('.cell.revealed');
+      const flaggedCells = document.querySelectorAll('.cell.flagged');
+      if (revealedCells.length === N * N - M && flaggedCells.length === M) {
+        cells.forEach(cell => {
+          cell.removeEventListener('click', handleCellClick);
+          cell.removeEventListener('contextmenu', handleCellRightClick);
+        });
+        alert('Вы победили 0_0 ');
+      }
+    }
+  </script>
+  
+</body>
+</html>
